@@ -9,12 +9,15 @@ The qBittorrent-sorter is a simple script that sorts your torrents by type, such
 docker-compose:
 
 ```yml
-version: '3.8'
 services:
   qBittorrent-sorter:
-    image: ghcr.io/chubru/qbittorrent-sorter:latest
+    build: .
     environment:
-      QBITTORRENT_HOST: "http://localhost:8088"
+      QBITTORRENT_HOST: "http://192.168.0.100"
+      QBITTORRENT_PORT: 9001
+      MOVIES_PATH: "/downloads/movies"
+      SHOWS_PATH: "/downloads/shows"
+      MISC_PATH: "/downloads/data"
       QBITTORRENT_USERNAME: "admin"
       QBITTORRENT_PASSWORD: "admin"
       REFRESH_INTERVAL: "60"
