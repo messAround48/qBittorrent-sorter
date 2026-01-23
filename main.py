@@ -14,6 +14,7 @@ def setup_logging():
 
 
 QBITTORRENT_HOST = os.getenv('QBITTORRENT_HOST', 'http://localhost:8088')
+QBITTORRENT_PORT = os.getenv('QBITTORRENT_PORT', 8080)
 QBITTORRENT_USERNAME = os.getenv('QBITTORRENT_USERNAME', 'admin')
 QBITTORRENT_PASSWORD = os.getenv('QBITTORRENT_PASSWORD', 'adminadmin')
 REFRESH_INTERVAL = int(os.getenv('REFRESH_INTERVAL', 3600))
@@ -25,6 +26,7 @@ def main_loop(logger):
         try:
             qbt_client = qbittorrentapi.Client(
                 host=QBITTORRENT_HOST,
+                port=QBITTORRENT_PORT,
                 username=QBITTORRENT_USERNAME,
                 password=QBITTORRENT_PASSWORD
             )
