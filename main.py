@@ -17,6 +17,9 @@ QBITTORRENT_HOST = os.getenv('QBITTORRENT_HOST', 'http://localhost:8088')
 QBITTORRENT_PORT = os.getenv('QBITTORRENT_PORT', 8080)
 QBITTORRENT_USERNAME = os.getenv('QBITTORRENT_USERNAME', 'admin')
 QBITTORRENT_PASSWORD = os.getenv('QBITTORRENT_PASSWORD', 'adminadmin')
+MOVIES_PATH = os.getenv('MOVIES_PATH', '/downloads/movies')
+SHOWS_PATH = os.getenv('SHOWS_PATH', '/downloads/shows')
+MISC_PATH = os.getenv('MISC_PATH', '/downloads/data')
 REFRESH_INTERVAL = int(os.getenv('REFRESH_INTERVAL', 3600))
 RETRY_INTERVAL = int(os.getenv('RETRY_INTERVAL', 300))
 
@@ -50,11 +53,11 @@ def main_loop(logger):
 def process_torrent(client, torrent, logger):
     media_count = sum(
         file.name.endswith(('.mp4', '.mkv', '.avi', '.mov', '.m4v')) for file in client.torrents_files(torrent.hash))
-    destination_folder = '/downloads/data'
+    destination_folder = MISC_PATH
     if media_count == 1:
-        destination_folder = '/downloads/films'
+        destination_folder = MOVIES_PATH
     elif media_count > 1:
-        destination_folder = '/downloads/serials'
+        destination_folder = SHOWS_PATH
 
     if torrent.save_path.rstrip('/') != destination_folder:
         try:
