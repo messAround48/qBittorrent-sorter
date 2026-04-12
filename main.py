@@ -56,21 +56,37 @@ def main_loop(logger):
 
 def extract_show_name(torrent, logger):
     """Извлекает название сериала из тега вида 'Name: {Название сериала}' или имени торрента."""
-    if hasattr(torrent, 'tags') and torrent.tags:
-        tags = [tag.strip() for tag in torrent.tags.split(',') if tag.strip()]
+    # Получаем теги — могут быть строкой или списком
+    tags_raw = getattr(torrent, 'tags', None)
+    if tags_raw:
+        if isinstance(tags_raw, str):
+            tags = [tag.strip() for tag in tags_raw.split(',') if tag.strip()]
+        elif isinstance(tags_raw, list):
+            tags = [str(tag).strip() for tag in tags_raw if str(tag).strip()]
+        else:
+            tags = []
+
         for tag in tags:
+            logger.debug(f'Checking tag: "{tag}" for torrent "{torrent.name}"')
             if tag.startswith('Name:'):
-                return tag[len('Name:'):].strip()
-    
+                show_name = tag[len('Name:'):].strip()
+                logger.debug(f'Found show name "{show_name}" in tag for torrent "{torrent.name}"')
+                return show_name
+
     # Если тега с именем нет, извлекаем из имени торрента
     name = torrent.name
     # Убираем информацию о сезоне/эпизоде, качестве, разрешении и т.д.
-    name = re.sub(r'\s*[\(\[]?(\d{4}|[Ss]\d+|[Ee]\d+|[Ss]\d+[Ee]\d+|\d+[xX]\d+|1080[pP]|720[pP]|480[pP]|2160[pP]|4[Kk]|WEB[-_ ]?[Dd][Ll]|WEBRip|HDTV|Blu[-_ ]?[Rr]ay|BDRip|HDRip|XviD|x264|x265|HEVC|AAC|AC3|DD5\.1|DTS|[Rr]us|[Ee]ng|[Uu]kr|SUB|NVO|TV)\)?\]?', '', name, flags=re.IGNORECASE)
+    # Сначала убираем паттерны с точками и дефисами как разделителями
+    name = re.sub(r'[.\s_-]+([Ss]\d+[Ee]?\d*|\d+[xX]\d+|WEB[-_ ]?[Dd][Ll]|WEBRip|HDTV|Blu[-_ ]?[Rr]ay|BDRip|HDRip|XviD|x264|x265|HEVC|AAC|AC3|DD5\.1|DTS|[Rr]us|[Ee]ng|[Uu]kr|SUB|NVO|TV)', '', name, flags=re.IGNORECASE)
+    # Убираем разрешение (1080p, 720p, 2160p, 4K и т.д.)
+    name = re.sub(r'[.\s_-]+(\d{3,4}[pP]|4[Kk])', '', name, flags=re.IGNORECASE)
+    # Убираем год
+    name = re.sub(r'[.\s_-]+(\d{4})', '', name, flags=re.IGNORECASE)
     # Заменяем точки и подчёркивания на пробелы
     name = re.sub(r'[._-]+', ' ', name).strip()
     # Убираем лишние пробелы и скобки
     name = name.strip('[]{}() ')
-    
+
     return name if name else torrent.name
 
 
@@ -95,7 +111,7 @@ def set_category(client, torrent, category, logger):
     if torrent.category != category:
         try:
             client.torrents_setCategory(torrent_hashes=torrent.hash, category=category)
-            logger.info(f'Torrent "{torrent.name}" assigned to category "{category}".')
+            logger.info(f'Torrent "{torrent.name}" assigned to category "{category}"')
         except Exception as e:
             logger.error(f'Error setting category for torrent "{torrent.name}": {e}')
 
@@ -130,7 +146,7 @@ def process_torrent(client, torrent, logger):
     if normalize_path(torrent.save_path) != normalize_path(destination_folder):
         try:
             client.torrents_setLocation(torrent_hashes=torrent.hash, location=destination_folder)
-            logger.info(f'Torrent "{torrent.name}" moved to {destination_folder}.')
+            logger.info(f'Torrent "{torrent.name}" moved to {destination_folder}')
         except Exception as e:
             logger.error(f'Error moving torrent "{torrent.name}": {e}')
 
