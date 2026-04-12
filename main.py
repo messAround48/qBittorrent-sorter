@@ -100,6 +100,11 @@ def set_category(client, torrent, category, logger):
             logger.error(f'Error setting category for torrent "{torrent.name}": {e}')
 
 
+def normalize_path(path):
+    """Нормализует путь для сравнения."""
+    return os.path.normpath(path).rstrip(os.sep).lower()
+
+
 def process_torrent(client, torrent, logger):
     media_count = sum(
         file.name.endswith(('.mp4', '.mkv', '.avi', '.mov', '.m4v')) for file in client.torrents_files(torrent.hash))
@@ -117,16 +122,15 @@ def process_torrent(client, torrent, logger):
             destination_folder = os.path.join(SHOWS_PATH, show_name)
         else:
             destination_folder = SHOWS_PATH
-            logger.info(f'Torrent "{torrent.name}" contains multiple seasons, keeping in {SHOWS_PATH}.')
 
     # Устанавливаем категорию
     set_category(client, torrent, category, logger)
 
-    # Перемещаем файлы если нужно
-    if torrent.save_path.rstrip('/') != destination_folder:
+    # Перемещаем только если торрент не на своём месте
+    if normalize_path(torrent.save_path) != normalize_path(destination_folder):
         try:
             client.torrents_setLocation(torrent_hashes=torrent.hash, location=destination_folder)
-            logger.info(f'Torrent "{torrent.name}" moved to folder {destination_folder}.')
+            logger.info(f'Torrent "{torrent.name}" moved to {destination_folder}.')
         except Exception as e:
             logger.error(f'Error moving torrent "{torrent.name}": {e}')
 
