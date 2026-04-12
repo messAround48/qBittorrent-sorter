@@ -1,4 +1,5 @@
 import os
+import re
 import time
 import logging
 import qbittorrentapi
@@ -50,6 +51,26 @@ def main_loop(logger):
             time.sleep(RETRY_INTERVAL)
 
 
+def extract_show_name(torrent, logger):
+    """Извлекает название сериала из тега вида 'Name: {Название сериала}' или имени торрента."""
+    if hasattr(torrent, 'tags') and torrent.tags:
+        tags = [tag.strip() for tag in torrent.tags.split(',') if tag.strip()]
+        for tag in tags:
+            if tag.startswith('Name:'):
+                return tag[len('Name:'):].strip()
+    
+    # Если тега с именем нет, извлекаем из имени торрента
+    name = torrent.name
+    # Убираем информацию о сезоне/эпизоде, качестве, разрешении и т.д.
+    name = re.sub(r'\s*[\(\[]?(\d{4}|[Ss]\d+|[Ee]\d+|[Ss]\d+[Ee]\d+|\d+[xX]\d+|1080[pP]|720[pP]|480[pP]|2160[pP]|4[Kk]|WEB[-_ ]?[Dd][Ll]|WEBRip|HDTV|Blu[-_ ]?[Rr]ay|BDRip|HDRip|XviD|x264|x265|HEVC|AAC|AC3|DD5\.1|DTS|[Rr]us|[Ee]ng|[Uu]kr|SUB|NVO|TV)\)?\]?', '', name, flags=re.IGNORECASE)
+    # Заменяем точки и подчёркивания на пробелы
+    name = re.sub(r'[._-]+', ' ', name).strip()
+    # Убираем лишние пробелы и скобки
+    name = name.strip('[]{}() ')
+    
+    return name if name else torrent.name
+
+
 def process_torrent(client, torrent, logger):
     media_count = sum(
         file.name.endswith(('.mp4', '.mkv', '.avi', '.mov', '.m4v')) for file in client.torrents_files(torrent.hash))
@@ -57,7 +78,8 @@ def process_torrent(client, torrent, logger):
     if media_count == 1:
         destination_folder = MOVIES_PATH
     elif media_count > 1:
-        destination_folder = SHOWS_PATH
+        show_name = extract_show_name(torrent, logger)
+        destination_folder = os.path.join(SHOWS_PATH, show_name)
 
     if torrent.save_path.rstrip('/') != destination_folder:
         try:
