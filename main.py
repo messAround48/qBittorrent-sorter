@@ -26,9 +26,11 @@ SHOWS_CATEGORY = os.getenv('SHOWS_CATEGORY', 'Сериал')
 MISC_CATEGORY = os.getenv('MISC_CATEGORY', 'Прочее')
 REFRESH_INTERVAL = int(os.getenv('REFRESH_INTERVAL', 3600))
 RETRY_INTERVAL = int(os.getenv('RETRY_INTERVAL', 300))
+CLEANUP_INTERVAL = int(os.getenv('CLEANUP_INTERVAL', 86400))
 
 
 def main_loop(logger):
+    last_cleanup = 0
     while True:
         try:
             qbt_client = qbittorrentapi.Client(
@@ -44,6 +46,13 @@ def main_loop(logger):
                 torrents = qbt_client.torrents_info()
                 for torrent in torrents:
                     process_torrent(qbt_client, torrent, logger)
+
+                # Очистка пустых папок по расписанию
+                now = time.time()
+                if now - last_cleanup >= CLEANUP_INTERVAL:
+                    cleanup_all_empty_dirs([MOVIES_PATH, SHOWS_PATH, MISC_PATH], logger)
+                    last_cleanup = now
+
                 time.sleep(REFRESH_INTERVAL)
 
         except qbittorrentapi.LoginFailed as e:
@@ -119,6 +128,33 @@ def set_category(client, torrent, category, logger):
 def normalize_path(path):
     """Нормализует путь для сравнения."""
     return os.path.normpath(path).rstrip(os.sep).lower()
+
+
+def cleanup_all_empty_dirs(base_paths, logger):
+    """Рекурсивно обходит все указанные пути и удаляет пустые папки (снизу вверх)."""
+    cleaned = 0
+    for base_path in base_paths:
+        base_path = os.path.normpath(base_path)
+        if not os.path.isdir(base_path):
+            continue
+        # Собираем все подпапки, сортируем по глубине (сначала глубокие)
+        dirs = []
+        for root, subdirs, _ in os.walk(base_path):
+            for d in subdirs:
+                dirs.append(os.path.join(root, d))
+        dirs.sort(key=lambda p: p.count(os.sep), reverse=True)
+        # Удаляем пустые снизу вверх
+        for d in dirs:
+            if os.path.isdir(d) and not os.listdir(d):
+                try:
+                    os.rmdir(d)
+                    logger.info(f'Removed empty directory: {d}')
+                    cleaned += 1
+                except OSError:
+                    pass
+    if cleaned:
+        logger.info(f'Cleanup done: {cleaned} empty director{"y" if cleaned == 1 else "ies"} removed.')
+    return cleaned
 
 
 def process_torrent(client, torrent, logger):

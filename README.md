@@ -18,6 +18,7 @@ The qBittorrent-sorter is a simple script that sorts your torrents by type, such
 - **Show name extraction**: For single-season shows, the script extracts the show name from:
   1. A tag in the format `Name: <Show Name>` (if set in qBittorrent)
   2. The torrent name (with quality/resolution/season info stripped)
+- **Empty directory cleanup**: Periodically removes empty folders left after torrent moves (default: once per 24 hours)
 
 ## Usage
 
@@ -39,8 +40,8 @@ services:
       MISC_CATEGORY: "Прочее"
       QBITTORRENT_USERNAME: "admin"
       QBITTORRENT_PASSWORD: "admin"
-      REFRESH_INTERVAL: "60"
-      RETRY_INTERVAL: "60"
+      REFRESH_INTERVAL: "3600"
+      RETRY_INTERVAL: "300"
       LOG_LEVEL: "INFO"
 ```
 
@@ -61,6 +62,7 @@ services:
 | `MISC_CATEGORY` | `Прочее` | Category name for misc content |
 | `REFRESH_INTERVAL` | `3600` | Torrent check interval (seconds) |
 | `RETRY_INTERVAL` | `300` | Retry interval on error (seconds) |
+| `CLEANUP_INTERVAL` | `86400` | Empty directory cleanup interval (seconds, default 24h) |
 | `LOG_LEVEL` | `INFO` | Logging level (`DEBUG`, `INFO`, `WARNING`, `ERROR`) |
 
 ## Show Name Extraction
