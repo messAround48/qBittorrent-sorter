@@ -145,6 +145,7 @@ def process_torrent(client, torrent, logger):
     # Перемещаем только если торрент не на своём месте
     if normalize_path(torrent.save_path) != normalize_path(destination_folder):
         try:
+            logger.debug(f'Moving "{torrent.name}": save_path="{torrent.save_path}" → destination="{destination_folder}"')
             client.torrents_setLocation(torrent_hashes=torrent.hash, location=destination_folder)
             logger.info(f'Torrent "{torrent.name}" moved to {destination_folder}')
         except Exception as e:
