@@ -21,6 +21,9 @@ QBITTORRENT_PASSWORD = os.getenv('QBITTORRENT_PASSWORD', 'adminadmin')
 MOVIES_PATH = os.getenv('MOVIES_PATH', '/downloads/movies')
 SHOWS_PATH = os.getenv('SHOWS_PATH', '/downloads/shows')
 MISC_PATH = os.getenv('MISC_PATH', '/downloads/data')
+MOVIES_CATEGORY = os.getenv('MOVIES_CATEGORY', 'Фильм')
+SHOWS_CATEGORY = os.getenv('SHOWS_CATEGORY', 'Сериал')
+MISC_CATEGORY = os.getenv('MISC_CATEGORY', 'Прочее')
 REFRESH_INTERVAL = int(os.getenv('REFRESH_INTERVAL', 3600))
 RETRY_INTERVAL = int(os.getenv('RETRY_INTERVAL', 300))
 
@@ -71,16 +74,55 @@ def extract_show_name(torrent, logger):
     return name if name else torrent.name
 
 
+def has_multiple_seasons(torrent, client):
+    """Проверяет, содержит ли торрент файлы нескольких сезонов."""
+    seasons = set()
+    for file in client.torrents_files(torrent.hash):
+        match = re.search(r'[Ss](\d+)', file.name)
+        if match:
+            seasons.add(int(match.group(1)))
+        else:
+            # Проверяем паттерн "Season X" или "Сезон X"
+            match = re.search(r'[Ss]eason\s*(\d+)|[Сс]езон\s*(\d+)', file.name, re.IGNORECASE)
+            if match:
+                season_num = int(match.group(1) or match.group(2))
+                seasons.add(season_num)
+    return len(seasons) > 1
+
+
+def set_category(client, torrent, category, logger):
+    """Устанавливает категорию для торрента."""
+    if torrent.category != category:
+        try:
+            client.torrents_setCategory(torrent_hashes=torrent.hash, category=category)
+            logger.info(f'Torrent "{torrent.name}" assigned to category "{category}".')
+        except Exception as e:
+            logger.error(f'Error setting category for torrent "{torrent.name}": {e}')
+
+
 def process_torrent(client, torrent, logger):
     media_count = sum(
         file.name.endswith(('.mp4', '.mkv', '.avi', '.mov', '.m4v')) for file in client.torrents_files(torrent.hash))
     destination_folder = MISC_PATH
+    category = MISC_CATEGORY
+
     if media_count == 1:
         destination_folder = MOVIES_PATH
+        category = MOVIES_CATEGORY
     elif media_count > 1:
-        show_name = extract_show_name(torrent, logger)
-        destination_folder = os.path.join(SHOWS_PATH, show_name)
+        category = SHOWS_CATEGORY
+        # Если торрент содержит несколько сезонов — не перемещаем в папку с названием
+        if not has_multiple_seasons(torrent, client):
+            show_name = extract_show_name(torrent, logger)
+            destination_folder = os.path.join(SHOWS_PATH, show_name)
+        else:
+            destination_folder = SHOWS_PATH
+            logger.info(f'Torrent "{torrent.name}" contains multiple seasons, keeping in {SHOWS_PATH}.')
 
+    # Устанавливаем категорию
+    set_category(client, torrent, category, logger)
+
+    # Перемещаем файлы если нужно
     if torrent.save_path.rstrip('/') != destination_folder:
         try:
             client.torrents_setLocation(torrent_hashes=torrent.hash, location=destination_folder)
