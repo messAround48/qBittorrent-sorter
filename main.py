@@ -30,7 +30,7 @@ CLEANUP_INTERVAL = int(os.getenv('CLEANUP_INTERVAL', 86400))
 
 
 def main_loop(logger):
-    last_cleanup = 0
+    last_cleanup = time.time()
     while True:
         try:
             qbt_client = qbittorrentapi.Client(
@@ -40,6 +40,10 @@ def main_loop(logger):
                 password=QBITTORRENT_PASSWORD
             )
             qbt_client.auth_log_in()
+
+            # Очистка при запуске
+            cleanup_all_empty_dirs([MOVIES_PATH, SHOWS_PATH, MISC_PATH], logger)
+            last_cleanup = time.time()
 
             while True:
                 # Обработка торрентов
