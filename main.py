@@ -136,6 +136,7 @@ def process_torrent(client, torrent, logger):
         if not has_multiple_seasons(torrent, client):
             show_name = extract_show_name(torrent, logger)
             destination_folder = os.path.join(SHOWS_PATH, show_name)
+            logger.debug(f'Show name extracted: "{show_name}"')
         else:
             destination_folder = SHOWS_PATH
 
@@ -145,7 +146,11 @@ def process_torrent(client, torrent, logger):
     # Перемещаем только если торрент не на своём месте
     if normalize_path(torrent.save_path) != normalize_path(destination_folder):
         try:
-            logger.debug(f'Moving "{torrent.name}": save_path="{torrent.save_path}" → destination="{destination_folder}"')
+            # Отключаем автоматическое управление, иначе setLocation может игнорироваться
+            if torrent.auto_tmm:
+                client.torrents_set_auto_management(enable=False, torrent_hashes=torrent.hash)
+                logger.debug(f'Disabled auto management for "{torrent.name}"')
+
             client.torrents_setLocation(torrent_hashes=torrent.hash, location=destination_folder)
             logger.info(f'Torrent "{torrent.name}" moved to {destination_folder}')
         except Exception as e:
