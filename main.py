@@ -42,6 +42,7 @@ def main_loop(logger):
             qbt_client.auth_log_in()
 
             # Очистка при запуске
+            logger.info('Starting empty directory cleanup...')
             cleanup_all_empty_dirs([MOVIES_PATH, SHOWS_PATH, MISC_PATH], logger)
             last_cleanup = time.time()
 
@@ -140,6 +141,7 @@ def cleanup_all_empty_dirs(base_paths, logger):
     for base_path in base_paths:
         base_path = os.path.normpath(base_path)
         if not os.path.isdir(base_path):
+            logger.debug(f'Path does not exist, skipping: {base_path}')
             continue
         # Собираем все подпапки, сортируем по глубине (сначала глубокие)
         dirs = []
@@ -147,6 +149,7 @@ def cleanup_all_empty_dirs(base_paths, logger):
             for d in subdirs:
                 dirs.append(os.path.join(root, d))
         dirs.sort(key=lambda p: p.count(os.sep), reverse=True)
+        logger.debug(f'Found {len(dirs)} subdirectories in {base_path}')
         # Удаляем пустые снизу вверх
         for d in dirs:
             if os.path.isdir(d) and not os.listdir(d):
@@ -158,6 +161,8 @@ def cleanup_all_empty_dirs(base_paths, logger):
                     pass
     if cleaned:
         logger.info(f'Cleanup done: {cleaned} empty director{"y" if cleaned == 1 else "ies"} removed.')
+    else:
+        logger.debug('No empty directories found during cleanup.')
     return cleaned
 
 
