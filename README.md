@@ -32,9 +32,9 @@ services:
       TZ: "Europe/Moscow"
       QBITTORRENT_HOST: "http://192.168.0.100"
       QBITTORRENT_PORT: 9001
-      MOVIES_PATH: "/downloads/movies"
-      SHOWS_PATH: "/downloads/shows"
-      MISC_PATH: "/downloads/data"
+      MOVIES_PATH: "/storage/media/movies"
+      SHOWS_PATH: "/storage/media/shows"
+      MISC_PATH: "/storage/torrent"
       MOVIES_CATEGORY: "Фильм"
       SHOWS_CATEGORY: "Сериал"
       MISC_CATEGORY: "Прочее"
@@ -42,8 +42,14 @@ services:
       QBITTORRENT_PASSWORD: "admin"
       REFRESH_INTERVAL: "3600"
       RETRY_INTERVAL: "300"
+      CLEANUP_INTERVAL: "86400"
       LOG_LEVEL: "INFO"
+    volumes:
+      - /storage/media:/storage/media
+      - /storage/torrent:/storage/torrent
 ```
+
+> **Important**: The `volumes` section must mount the same paths that are used in `MOVIES_PATH`, `SHOWS_PATH`, and `MISC_PATH`. Otherwise, the script won't be able to access the filesystem for file operations and empty directory cleanup.
 
 ## Environment Variables
 
