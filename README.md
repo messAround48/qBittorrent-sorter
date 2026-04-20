@@ -85,3 +85,24 @@ Supported Architectures:
     AMD64 ✅
     ARM64 ✅
     ARMv7 ✅
+
+## CI/CD – Docker image publishing
+
+The repository contains a GitHub Actions workflow that builds and pushes a Docker image to the GitHub Container Registry.
+
+### Triggers
+
+* **`test` branch** – on every push the image is built and pushed with the tag `latest`. This provides an always‑up‑to‑date image for development/testing.
+* **`release` branch** – on pushes (or on tags) the image is built and pushed with version tags that match the pattern `v*.*.*`. The workflow uses the `docker/metadata-action` to generate tags such as `v1.2.3` and `v1.2`.
+
+### How it works
+
+* The `flavor` option in the metadata step sets `latest` to `false` for the `test` branch and `true` for all other refs. This prevents the `latest` tag from being added automatically when we are already tagging the image explicitly.
+* In the **Build and push Docker image** step the `tags` input selects `latest` for the `test` branch and the automatically generated tags for release builds:
+  ```yaml
+  tags: ${{ github.ref == 'refs/heads/test' && 'latest' || steps.meta.outputs.tags }}
+  ```
+
+You can trigger a release build by creating a tag like `v1.0.0` on the `release` branch.
+
+For more details see the workflow file at [`.github/workflows/docker-publish.yml`](.github/workflows/docker-publish.yml:1).
