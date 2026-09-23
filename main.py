@@ -108,7 +108,7 @@ def has_multiple_seasons(torrent, client):
     """Проверяет, содержит ли торрент файлы нескольких сезонов."""
     seasons = set()
     for file in client.torrents_files(torrent.hash):
-        match = re.search(r'[Ss](\d+)[Ee](\d+)', file.name)
+        match = re.search(r'[Ss](\d+)', file.name)
         if match:
             seasons.add(int(match.group(1)))
         else:
