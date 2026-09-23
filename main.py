@@ -113,7 +113,7 @@ def has_multiple_seasons(torrent, client):
             seasons.add(int(match.group(1)))
         else:
             # Проверяем паттерн "Season*X" или "Сезон*X"
-            match = re.search(r'[Ss]eason(\s*|_+)(\d+)|[Сс]езон(\s*|_+)(\d+)', file.name, re.IGNORECASE)
+            match = re.search(r'[Ss]eason(?:\s*|_+)(\d+)|[Сс]езон(?:\s*|_+)(\d+)', file.name, re.IGNORECASE)
             if match:
                 season_num = int(match.group(1) or match.group(2))
                 seasons.add(season_num)
