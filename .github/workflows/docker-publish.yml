@@ -50,25 +50,26 @@ jobs:
 
       - name: Extract Docker metadata
         id: meta
-        uses: docker/metadata-action@v5.0.0
+        uses: docker/metadata-action@v5
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
-          # Use the `latest` tag only for release builds. For the `test` branch we push the image with the `latest` tag explicitly in the step below.
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=sha
           flavor: |
-            latest=${{ github.ref != 'refs/heads/test' }}
-
+            latest=auto
 
       - name: Build and push Docker image
-        uses: docker/build-push-action@v2
+        uses: docker/build-push-action@v6
         with:
           context: .
           push: ${{ github.event_name != 'pull_request' }}
-          # For the `test` branch we always push the image with the `latest` tag.
-          # For release builds we use the automatically generated tags from the metadata action.
-          tags: ${{ github.ref == 'refs/heads/test' && 'latest' || steps.meta.outputs.tags }}
-          platforms: linux/amd64,linux/arm64,linux/arm/v7
+          tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          builder: ${{ steps.buildx.outputs.name }}
+          platforms: linux/amd64,linux/arm64,linux/arm/v7
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
